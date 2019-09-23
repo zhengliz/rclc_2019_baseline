@@ -1,5 +1,5 @@
 # rclc_2019_baseline
-Code for RCLC baseline experiment. This repo contains the code to download dataset and publication information from open access uri.
+Code for RCLC baseline experiment. This repo contains the code to download dataset and publication information from open access uri. Baseline experiment notebook can be seen at `src/rclc_2019_entity_indicative_naive_bayes_baseline.ipynb`.
 
 
 ## Quick Start
@@ -25,4 +25,4 @@ java -Xmx6g -jar ../tools/science-parse-cli-assembly-2.0.2-SNAPSHOT.jar -o ../da
 mkdir ../data/resource/pubs/text
 python convert_pdf2text.py
 ```
-7. Run baseline experiment notebook
+7. Run baseline experiment notebook `rclc_2019_entity_indicative_naive_bayes_baseline.ipynb`
