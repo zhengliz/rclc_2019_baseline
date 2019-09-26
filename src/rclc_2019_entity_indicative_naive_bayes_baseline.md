@@ -21,10 +21,6 @@ pubs = corpus['pubs']
 sent_filter = SentenceFilterClass()
 ```
 
-    loading datasets: 100%|##########| 22/22 [00:09<00:00,  3.21it/s]
-    loading pubs: 100%|##########| 179/179 [00:00<00:00, 1996.20it/s]
-
-
 ## Let's prepare the publications for our experiment. 
 
 We extract abstract, content, and references from the publications.
@@ -65,7 +61,7 @@ for pub in pubs:
 print(f'Number of publications: {len(pub_contexts)}')
 ```
 
-    Number of publications: 179
+    Number of publications: 480
 
 
 ## First, we want to see whether our model can overfit the corpus
@@ -79,19 +75,15 @@ dataset_word_dict, word_dataset_dict = einb.parameter_learn(pub_contexts,pub_lab
 
 # Perform prediction
 errs = []
-precs = []
 for i, context in enumerate(pub_contexts):
     # print(f'{pub_labels[i]}')
     preds = einb.predict(context, dataset_word_dict, word_dataset_dict, 5)
     # print(f'{preds}')
     errs.append(top5UptoD_err(pub_labels[i], [p[0] for p in preds]))
-    precs.append(top5UptoD_prec(pub_labels[i], [p[0] for p in preds]))
 print(f'top5UptoD error rate: {mean(errs)}')
-print(f'top5UptoD_precision: {mean(precs)}')
 ```
 
-    top5UptoD error rate: 0.09925512104283053
-    top5UptoD_precision: 0.9007448789571695
+    top5UptoD error rate: 0.11086805555555555
 
 
 ## Now, We conduct 5-fold Cross Validation Evaluation
@@ -102,7 +94,6 @@ from sklearn.model_selection import KFold
 
 kf = KFold(n_splits=5, shuffle=True, random_state=2019)
 cv_errs = []
-cv_precs = []
 iter = 0
 for train_index, test_index in kf.split(pub_contexts):
     print(f'Fold {iter}')
@@ -113,38 +104,32 @@ for train_index, test_index in kf.split(pub_contexts):
     
     dataset_word_dict, word_dataset_dict = einb.parameter_learn(X_train,y_train)
     errs = []
-    precs = []
     for i, context in enumerate(X_test):
         # print(f'{y_test[i]}')
         preds = einb.predict(context, dataset_word_dict, word_dataset_dict, 5)
         # print(f'{preds}')
         errs.append(top5UptoD_err(y_test[i], [p[0] for p in preds]))
-        precs.append(top5UptoD_prec(y_test[i], [p[0] for p in preds]))
     cv_errs.append(mean(errs))
-    cv_precs.append(mean(precs))
     print(f'top5UptoD error rate: {mean(errs)}')
-    print(f'top5UptoD_precision: {mean(precs)}')
     iter += 1
 
 print(f'Average top5UptoD error rate: {mean(cv_errs)}')
-print(f'Average top5UptoD_precision: {mean(cv_precs)}')
 ```
 
     Fold 0
-    top5UptoD error rate: 0.3972222222222222
-    top5UptoD_precision: 0.6027777777777777
+    top5UptoD error rate: 0.3072916666666667
     Fold 1
-    top5UptoD error rate: 0.3365740740740741
-    top5UptoD_precision: 0.663425925925926
+    top5UptoD error rate: 0.23663194444444444
     Fold 2
-    top5UptoD error rate: 0.4425925925925926
-    top5UptoD_precision: 0.5574074074074075
+    top5UptoD error rate: 0.17708333333333334
     Fold 3
-    top5UptoD error rate: 0.31574074074074077
-    top5UptoD_precision: 0.6842592592592592
+    top5UptoD error rate: 0.1876736111111111
     Fold 4
-    top5UptoD error rate: 0.3880952380952381
-    top5UptoD_precision: 0.611904761904762
-    Average top5UptoD error rate: 0.37604497354497357
-    Average top5UptoD_precision: 0.6239550264550264
+    top5UptoD error rate: 0.17326388888888888
+    Average top5UptoD error rate: 0.21638888888888888
 
+
+
+```python
+
+```

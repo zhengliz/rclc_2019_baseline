@@ -13117,25 +13117,6 @@ div#notebook {
 </div>
 </div>
 
-<div class="output_wrapper">
-<div class="output">
-
-
-<div class="output_area">
-
-    <div class="prompt"></div>
-
-
-<div class="output_subarea output_stream output_stderr output_text">
-<pre>loading datasets: 100%|##########| 22/22 [00:09&lt;00:00,  3.21it/s]
-loading pubs: 100%|##########| 179/179 [00:00&lt;00:00, 1996.20it/s]
-</pre>
-</div>
-</div>
-
-</div>
-</div>
-
 </div>
 <div class="cell border-box-sizing text_cell rendered"><div class="prompt input_prompt">
 </div><div class="inner_cell">
@@ -13198,7 +13179,7 @@ loading pubs: 100%|##########| 179/179 [00:00&lt;00:00, 1996.20it/s]
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>Number of publications: 179
+<pre>Number of publications: 480
 </pre>
 </div>
 </div>
@@ -13225,15 +13206,12 @@ loading pubs: 100%|##########| 179/179 [00:00&lt;00:00, 1996.20it/s]
 
 <span class="c1"># Perform prediction</span>
 <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">precs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">context</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pub_contexts</span><span class="p">):</span>
     <span class="c1"># print(f&#39;{pub_labels[i]}&#39;)</span>
     <span class="n">preds</span> <span class="o">=</span> <span class="n">einb</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">dataset_word_dict</span><span class="p">,</span> <span class="n">word_dataset_dict</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
     <span class="c1"># print(f&#39;{preds}&#39;)</span>
     <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top5UptoD_err</span><span class="p">(</span><span class="n">pub_labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]))</span>
-    <span class="n">precs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top5UptoD_prec</span><span class="p">(</span><span class="n">pub_labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]))</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;top5UptoD error rate: {mean(errs)}&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;top5UptoD_precision: {mean(precs)}&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13250,8 +13228,7 @@ loading pubs: 100%|##########| 179/179 [00:00&lt;00:00, 1996.20it/s]
 
 
 <div class="output_subarea output_stream output_stdout output_text">
-<pre>top5UptoD error rate: 0.09925512104283053
-top5UptoD_precision: 0.9007448789571695
+<pre>top5UptoD error rate: 0.11086805555555555
 </pre>
 </div>
 </div>
@@ -13276,7 +13253,6 @@ top5UptoD_precision: 0.9007448789571695
 
 <span class="n">kf</span> <span class="o">=</span> <span class="n">KFold</span><span class="p">(</span><span class="n">n_splits</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">2019</span><span class="p">)</span>
 <span class="n">cv_errs</span> <span class="o">=</span> <span class="p">[]</span>
-<span class="n">cv_precs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="nb">iter</span> <span class="o">=</span> <span class="mi">0</span>
 <span class="k">for</span> <span class="n">train_index</span><span class="p">,</span> <span class="n">test_index</span> <span class="ow">in</span> <span class="n">kf</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">pub_contexts</span><span class="p">):</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Fold </span><span class="si">{iter}</span><span class="s1">&#39;</span><span class="p">)</span>
@@ -13287,21 +13263,16 @@ top5UptoD_precision: 0.9007448789571695
     
     <span class="n">dataset_word_dict</span><span class="p">,</span> <span class="n">word_dataset_dict</span> <span class="o">=</span> <span class="n">einb</span><span class="o">.</span><span class="n">parameter_learn</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span><span class="n">y_train</span><span class="p">)</span>
     <span class="n">errs</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="n">precs</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">context</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">X_test</span><span class="p">):</span>
         <span class="c1"># print(f&#39;{y_test[i]}&#39;)</span>
         <span class="n">preds</span> <span class="o">=</span> <span class="n">einb</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">dataset_word_dict</span><span class="p">,</span> <span class="n">word_dataset_dict</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
         <span class="c1"># print(f&#39;{preds}&#39;)</span>
         <span class="n">errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top5UptoD_err</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]))</span>
-        <span class="n">precs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">top5UptoD_prec</span><span class="p">(</span><span class="n">y_test</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">preds</span><span class="p">]))</span>
     <span class="n">cv_errs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">errs</span><span class="p">))</span>
-    <span class="n">cv_precs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mean</span><span class="p">(</span><span class="n">precs</span><span class="p">))</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;top5UptoD error rate: {mean(errs)}&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;top5UptoD_precision: {mean(precs)}&#39;</span><span class="p">)</span>
     <span class="nb">iter</span> <span class="o">+=</span> <span class="mi">1</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Average top5UptoD error rate: {mean(cv_errs)}&#39;</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="n">f</span><span class="s1">&#39;Average top5UptoD_precision: {mean(cv_precs)}&#39;</span><span class="p">)</span>
 </pre></div>
 
     </div>
@@ -13319,26 +13290,33 @@ top5UptoD_precision: 0.9007448789571695
 
 <div class="output_subarea output_stream output_stdout output_text">
 <pre>Fold 0
-top5UptoD error rate: 0.3972222222222222
-top5UptoD_precision: 0.6027777777777777
+top5UptoD error rate: 0.3072916666666667
 Fold 1
-top5UptoD error rate: 0.3365740740740741
-top5UptoD_precision: 0.663425925925926
+top5UptoD error rate: 0.23663194444444444
 Fold 2
-top5UptoD error rate: 0.4425925925925926
-top5UptoD_precision: 0.5574074074074075
+top5UptoD error rate: 0.17708333333333334
 Fold 3
-top5UptoD error rate: 0.31574074074074077
-top5UptoD_precision: 0.6842592592592592
+top5UptoD error rate: 0.1876736111111111
 Fold 4
-top5UptoD error rate: 0.3880952380952381
-top5UptoD_precision: 0.611904761904762
-Average top5UptoD error rate: 0.37604497354497357
-Average top5UptoD_precision: 0.6239550264550264
+top5UptoD error rate: 0.17326388888888888
+Average top5UptoD error rate: 0.21638888888888888
 </pre>
 </div>
 </div>
 
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span> 
+</pre></div>
+
+    </div>
 </div>
 </div>
 

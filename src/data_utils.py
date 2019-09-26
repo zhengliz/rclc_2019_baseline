@@ -72,12 +72,12 @@ def copy_pdf_resources(input_path: str,
         print(f'Unable to copy file: {e}')
 
 
-def _download(uri: str, res_type: str, output_path: Path) -> bool:
+def _download(uri: str, res_type: str,
+              output_path: Path, e_id: str) -> bool:
     """ download a resource and store in a file
     """
-    if res_type not in ['pdf', 'html']:
-        print(f'Invalid resource type: {res_type}')
-        return False
+    if res_type not in ['pdf', 'html', 'unknown']:
+        raise ValueError(f'Invalid resource type: {res_type}')
     trial = 0
     headers = requests.utils.default_headers()
     headers['User-Agent'] = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/76.0.3809.132 Safari/537.36'
@@ -86,7 +86,8 @@ def _download(uri: str, res_type: str, output_path: Path) -> bool:
         try:
             parsed_uri = urlparse(uri)
             if parsed_uri.netloc == 'www.sciencedirect.com':
-                """ Special case: sciencedirect.com auto generates pdf download link in an intermediate page
+                """ Special case: sciencedirect.com auto generates pdf
+                    download link in an intermediate page
                 """
                 session = HTMLSession()
                 r0 = session.get(uri)
@@ -100,12 +101,17 @@ def _download(uri: str, res_type: str, output_path: Path) -> bool:
                 res = requests.get(parsed_uri.scheme + '://' +
                                    parsed_uri.netloc + src)
             else:
-                res = requests.get(uri, headers=headers)
-            output_path.write_bytes(res.content)
+                res = requests.get(uri, headers=headers, timeout=(10, 20))
+            if res_type == 'unknown':
+                content_type = res.headers["content-type"]
+                res_type = 'html' if 'text/html' in content_type else 'pdf'
+            out_file = output_path / (e_id + '.' + res_type)
+            out_file.write_bytes(res.content)
             if res_type == 'pdf':
-                if not is_valid_pdf_file(output_path.resolve().as_posix()):
-                    output_path.unlink()
-                    return False
+                if not is_valid_pdf_file(out_file.resolve().as_posix()):
+                    out_file.unlink()
+                    trial += 1
+                    continue
             return True
         except requests.exceptions.RequestException as err:
             print(err)
@@ -133,25 +139,33 @@ def download_resources(corpus: object,
     if not dataset_page_full_path.exists():
         dataset_page_full_path.mkdir(parents=True)
 
+    downloaded_pubs = list(pub_pdf_full_path.glob('*.pdf'))
+    downloaded_pubs_id = set([f.stem for f in downloaded_pubs])
+    downloaded_datasets = list(dataset_page_full_path.glob('*.*'))
+    downloaded_datasets_id = set([f.stem for f in downloaded_datasets])
+
     for entity in tqdm(corpus, ascii=True, desc='Fetch resources'):
         _id = urlparse(entity['@id']).fragment.split('-')[1]
         _type = entity['@type']
         if _type == 'ResearchPublication':
+            downloaded_before = _id in downloaded_pubs_id
             res_uri = entity['openAccess']['@value']
-            output = Path(output_path + PUB_PDF_PATH + _id + '.pdf')
-            if force_download or not output.exists():
-                if not _download(res_uri, 'pdf', output):
+            if force_download or not downloaded_before:
+                if not _download(res_uri, 'pdf',
+                                 pub_pdf_full_path, _id):
                     print(f'Failed to download {res_uri}')
                 time.sleep(0.5)
         elif _type == 'Dataset':
+            downloaded_before = _id in downloaded_datasets_id
             res_uri = entity['foaf:page']['@value']
-            output = Path(output_path + DATASET_PAGE_PATH + _id + '.html')
-            if force_download or not output.exists():
-                if not _download(res_uri, 'html', output):
+            output = Path(output_path + DATASET_PAGE_PATH + _id + '.' + _type)
+            if force_download or not downloaded_before:
+                if not _download(res_uri, 'unknown',
+                                 dataset_page_full_path, _id):
                     print(f'Failed to download {res_uri}')
                 time.sleep(0.5)
         else:
-            raise Exception(f'Unknown Exception: {_type}')
+            raise Exception(f'Unknown Entity Type: {_type}')
 
 
 def convert_pdf2text(input_path: str,
@@ -188,15 +202,18 @@ def _extract_meta_tags(html: str) -> dict:
     """
     soup = BeautifulSoup(html, 'html5lib')
     og_title = soup.find('meta', {'property': 'og:title'})
-    title = og_title['content'] if og_title else soup.title.string
+    title = og_title['content'] if og_title else \
+        soup.title.string if soup.title else ''
 
     meta_desc = soup.find('meta', {'name': 'description'})
-    description = meta_desc['content'] if meta_desc else None
+    description = meta_desc['content'] \
+        if meta_desc and 'content' in meta_desc else None
     if description is None:
         og_desc = soup.find('meta', {'property': 'og:description'})
-        description = og_desc['content'] if og_desc else None
+        description = og_desc['content'] \
+            if og_desc and 'content' in og_desc else None
     return {
-        'title': _clean_html_str(title),
+        'title': _clean_html_str(title) if title else '',
         'description': description
     }
 
@@ -217,7 +234,14 @@ def _parse_dataset_html(html_file: str) -> dict:
         title, meta-description, and all main paragraph (extracted using
         readability extractor)
     """
-    with open(html_file, 'r') as f:
+    """ TODO: handle pdf files
+    """
+    if html_file.endswith('.pdf'):
+        return {
+            'meta': {'title': '', 'description': ''},
+            'summary': ''
+        }
+    with open(html_file, 'rb') as f:
         text = f.read()
     return {
         'meta': _extract_meta_tags(text),
@@ -257,7 +281,8 @@ def load_rclc_corpus(corpus_file: str,
     datasets = [e for e in corpus if e['@type'] == 'Dataset']
     for dataset in tqdm(datasets, ascii=True, desc='loading datasets'):
         _id = urlparse(dataset['@id']).fragment.split('-')[1]
-        dataset['html'] = _parse_dataset_html(html_path + _id + '.html')
+        if Path(html_path + _id + '.html').exists():
+            dataset['html'] = _parse_dataset_html(html_path + _id + '.html')
 
     pubs = [e for e in corpus if e['@type'] == 'ResearchPublication']
     for pub in tqdm(pubs, ascii=True, desc='loading pubs'):
